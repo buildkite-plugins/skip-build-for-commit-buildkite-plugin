@@ -4,7 +4,7 @@ A [Buildkite plugin](https://buildkite.com/docs/agent/v3/plugins) that checks if
 
 ## Example
 
-This will check all builds for the same commit and exits current job if the build is already found
+This will fetch all builds for the same commit and cancel current build if the build is already found with same commit.
 
 ```yml
 steps:
