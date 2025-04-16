@@ -1,37 +1,42 @@
 #!/bin/bash
-
 set -euo pipefail
 
+echo "🔍 Checking  existing builds for commit $BUILDKITE_COMMIT..."
 
-echo "skipping an existing commit"
+url="https://api.buildkite.com/v2/organizations/${BUILDKITE_ORGANIZATION_SLUG}/pipelines/${BUILDKITE_PIPELINE_SLUG}/builds?commit=${BUILDKITE_COMMIT}"
 
-echo "🔍 Checking for existing builds for commit $BUILDKITE_COMMIT..."
+echo "URL: $url"
 
-#Fetch builds ran on this commit
+token_var="${BUILDKITE_PLUGIN_SKIP_BUILD_FOR_COMMIT_READ_BUILD_TOKEN_ENV:-}"
 
-response=$(curl -s -H "Authorization: Bearer ${buildkite_api_token}" \
-  "https://api.buildkite.com/v2/organizations/${BUILDKITE_ORGANIZATION_SLUG}/pipelines/${BUILDKITE_PIPELINE_SLUG}/builds?commit=${BUILDKITE_COMMIT}")
+if [[ -z "${!token_var:-}" ]] ; then
+    echo "+++ 🚨 No read build api token found in \$${token_var} so commit will not be checked"
+else
 
+    response=$(curl -s -D - -H "Authorization: Bearer ${!token_var:-}" "$url")
 
-echo "Response ${response}"
+    if $response | grep -q " 404 Not Found"; then
+        echo "🚨 404 Not Found: The requested resource could not be found."
+        
+    else
 
+        body=$(echo "$response" | sed '1,/^\r$/d')
 
-# Extract build numbers from the response
-build_numbers=$(echo "$response" | grep -o '"number":[0-9]\+' | grep -o '[0-9]\+')
+        build_numbers=$(echo "$body" | grep -o '"number":[0-9]\+' | grep -o '[0-9]\+' | sed 's/^0*//')
+        duplicate_found=false
+        for number in $build_numbers; do
+            if [ "$number" != "$BUILDKITE_BUILD_NUMBER" ]; then
+                duplicate_found=true
+                echo "✅ Commit $BUILDKITE_COMMIT has already been built in build #$number. Skipping step..."
+                buildkite-agent annotate "Commit $BUILDKITE_COMMIT has already been built in build #$number. Cancelling the build..." --style "info"
+                curl -s -D -H "Authorization: Bearer ${!token_var:-}" \
+                        -X PUT "https://api.buildkite.com/v2/organizations/${BUILDKITE_ORGANIZATION_SLUG}/pipelines/${BUILDKITE_PIPELINE_SLUG}/builds/$BUILDKITE_BUILD_NUMBER/cancel"
+                exit 0
+            fi
+        done
+        if ! $duplicate_found; then
+            echo "✅ No duplicate build found for commit $BUILDKITE_COMMIT"
+        fi
+    fi
 
-# Remove 0s as there are few other number 0 in the response
-build_numbers=$(echo "$build_numbers" | while read -r number; do
-  echo "$number" | sed 's/^0*//'
-done)
-
-echo "Build numbers: ${build_numbers}"
-
-# Check if any build number is different from the current build number
-for number in $build_numbers; do
-  if [ "$number" != "$BUILDKITE_BUILD_NUMBER" ]; then
-    echo "✅ Commit $BUILDKITE_COMMIT has already been built in build #$number. Skipping step..."
-    buildkite-agent annotate "Commit $BUILDKITE_COMMIT has already been built in build #$number. exiting step..."
-    exit 1
-  fi
-done
-
+fi

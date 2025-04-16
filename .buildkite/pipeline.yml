@@ -1,0 +1,14 @@
+steps:
+
+  - label: ":sparkles: lint"
+    plugins:
+      - plugin-linter#v3.3.0:
+          id: skip-build-for-commit
+  
+  - label: ":shell: Shellcheck"
+    plugins:
+      - shellcheck#v1.3.0:
+          files:
+            - hooks/**
+            - lib/**
+
