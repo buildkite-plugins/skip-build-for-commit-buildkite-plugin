@@ -1,0 +1,11 @@
+name: git commit skipper
+description: Exits the build if the commit is already built on other branches for a given pipeline
+author: "https://github.com/buildkite"
+requirements: []
+configuration:
+  properties:
+    buildkite_api_token:
+      type: string
+      description: "Name of the buildkite api token set in your environment"
+  additionalProperties: false
+
