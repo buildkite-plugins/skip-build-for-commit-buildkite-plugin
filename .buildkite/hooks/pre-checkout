@@ -14,7 +14,7 @@ while [ -n "$url" ]; do
     # Separate headers and body
     headers=$(echo "$response" | sed '/^\r$/q')
     body=$(echo "$response" | sed '1,/^\r$/d')
-
+    echo "headers: $headers"
     # Extract build numbers from the response body
     build_numbers=$(echo "$body" | grep -o '"number":[0-9]\+' | grep -o '[0-9]\+')
 
@@ -38,16 +38,5 @@ while [ -n "$url" ]; do
     echo "No other builds found for commit $BUILDKITE_COMMIT."
     echo "Checking for next page of results..."
 
-    # Extract the Link header line
-    link_header=$(echo "$headers" | grep -i '^Link:')
-    echo "Link header: $link_header"
 
-    # Use sed to extract the URL with rel="next"
-    next_link=$(echo "$link_header" | sed -n 's/.*<\([^>]*\)>; rel="next".*/\1/p')
-    echo "Next link: $next_link"
-
-    # Update the URL for the next iteration or break if no next link
-    if [ -n "$next_link" ]; then
-        url="$next_link"
-    fi
 done
