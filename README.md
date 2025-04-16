@@ -4,7 +4,7 @@ A [Buildkite plugin](https://buildkite.com/docs/agent/v3/plugins) that checks if
 
 ## Example
 
-This will fetch all builds for the same commit and cancel current build if the build is already found with same commit.
+This will fetch all builds for the same commit for a pipeline and cancel current build if the build is already found with same commit.
 
 ```yml
 steps:
@@ -17,7 +17,7 @@ steps:
 
 ### Required
 
-### `API_TOKEN_ENV_VAR` (string or array of strings)
+### `API_TOKEN_ENV_VAR` (string)
 
 Env var for buildkite API token for API access
 
