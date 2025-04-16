@@ -30,6 +30,7 @@ echo "Build numbers: ${build_numbers}"
 for number in $build_numbers; do
   if [ "$number" != "$BUILDKITE_BUILD_NUMBER" ]; then
     echo "✅ Commit $BUILDKITE_COMMIT has already been built in build #$number. Skipping step..."
+    buildkite-agent annotate "Commit $BUILDKITE_COMMIT has already been built in build #$number. exiting step..."
     exit 1
   fi
 done
