@@ -2,34 +2,41 @@
 
 set -euo pipefail
 
-
-echo "skipping an existing commit"
-
 echo "🔍 Checking for existing builds for commit $BUILDKITE_COMMIT..."
 
-#Fetch builds ran on this commit
+# Initialize the URL for the first page
+url="https://api.buildkite.com/v2/organizations/${BUILDKITE_ORGANIZATION_SLUG}/pipelines/${BUILDKITE_PIPELINE_SLUG}/builds?commit=${BUILDKITE_COMMIT}&per_page=100"
 
-response=$(curl -s -H "Authorization: Bearer ${buildkite_api_token}" \
-  "https://api.buildkite.com/v2/organizations/${BUILDKITE_ORGANIZATION_SLUG}/pipelines/${BUILDKITE_PIPELINE_SLUG}/builds?commit=${BUILDKITE_COMMIT}")
+while [ -n "$url" ]; do
+  # Fetch the response headers and body
+  response=$(curl -s -D - -H "Authorization: Bearer ${buildkite_api_token}" "$url")
+  echo "Response: $response"
+  # Separate headers and body
+  headers=$(echo "$response" | sed '/^\r$/q')
+  body=$(echo "$response" | sed '1,/^\r$/d')
 
+  # Extract build numbers from the response body
+  build_numbers=$(echo "$body" | grep -o '"number":[0-9]\+' | grep -o '[0-9]\+')
 
+  # Remove leading zeros from build numbers
+  build_numbers=$(echo "$build_numbers" | sed 's/^0*//')
 
-# Extract build numbers from the response
-build_numbers=$(echo "$response" | grep -o '"number":[0-9]\+' | grep -o '[0-9]\+')
+  echo "Build numbers where this commit is built: ${build_numbers}"
 
-# Remove 0s as there are few other number 0 in the response
-build_numbers=$(echo "$build_numbers" | while read -r number; do
-  echo "$number" | sed 's/^0*//'
-done)
+  # Check if any build number is different from the current build number
+  for number in $build_numbers; do
+    if [ "$number" != "$BUILDKITE_BUILD_NUMBER" ]; then
+      echo "✅ Commit $BUILDKITE_COMMIT has already been built in build #$number. Skipping step..."
+      buildkite-agent annotate "Commit $BUILDKITE_COMMIT has already been built in build #$number. Exiting step..."
+      exit 1
+    fi
+  done
 
-echo "Build numbers wwhere this commit is built: ${build_numbers}"
+  # Extract the 'next' link from the headers
+  next_link=$(echo "$headers" | grep -i '^Link:' | sed -n 's/.*<\([^>]*\)>; rel="next".*/\1/p')
 
-# Check if any build number is different from the current build number
-for number in $build_numbers; do
-  if [ "$number" != "$BUILDKITE_BUILD_NUMBER" ]; then
-    echo "✅ Commit $BUILDKITE_COMMIT has already been built in build #$number. Skipping step..."
-    buildkite-agent annotate "Commit $BUILDKITE_COMMIT has already been built in build #$number. exiting step..."
-    exit 1
+  # Update the URL for the next iteration
+  if [ -n "$next_link" ]; then
+    url="$next_link"
   fi
 done
-
