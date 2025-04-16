@@ -5,7 +5,7 @@ steps:
 
   - label: run skip-build-for-commit
     plugins:
-      - skip-build-for-commi#pre-checkout:
+      - skip-build-for-commit#pre-checkout:
           files:
             - hooks/*
             - buildkite/*.sh
