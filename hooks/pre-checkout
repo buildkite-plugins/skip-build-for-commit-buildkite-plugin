@@ -17,12 +17,9 @@ echo "before while"
 while [ -n "$url" ]; do
     response=$(curl -s -D - -H "Authorization: Bearer ${API_TOKEN}" "$url")
 
-    headers=$(echo "$response" | sed '/^\r$/q')
     body=$(echo "$response" | sed '1,/^\r$/d')
 
     build_numbers=$(echo "$body" | grep -o '"number":[0-9]\+' | grep -o '[0-9]\+' | sed 's/^0*//')
-
-    echo "Build numbers where this commit is built: ${build_numbers}"
 
     for number in $build_numbers; do
         if [ "$number" != "$BUILDKITE_BUILD_NUMBER" ]; then
@@ -34,8 +31,6 @@ while [ -n "$url" ]; do
         fi
     done
 
-    echo "No other builds found for commit $BUILDKITE_COMMIT."
-    # TODO: Handle pagination if needed
-    break
+   
 done
-echo "after while"
+
