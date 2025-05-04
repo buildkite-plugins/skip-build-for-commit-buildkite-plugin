@@ -1,5 +1,4 @@
 steps:
-
   - label: run skip-build-for-commit
     plugins:
       - skip-build-for-commit#pre-checkout:
