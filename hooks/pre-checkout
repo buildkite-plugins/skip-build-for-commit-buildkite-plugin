@@ -14,10 +14,6 @@ echo "URL: $url"
 
 # Check if the API token is set
 API_TOKEN="$(plugin_read_config buildkite_api_token "none")"
-if $API_TOKEN == "none"; then
-    echo "API token not set. Please set the buildkite_api_token in the plugin configuration."
-    exit 1
-fi
 
 while [ -n "$url" ]; do
     response=$(curl -s -D - -H "Authorization: Bearer ${API_TOKEN}" "$url")
