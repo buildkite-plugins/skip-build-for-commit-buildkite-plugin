@@ -1,0 +1,13 @@
+steps:
+  - label: run skip-build-for-commit
+    plugins:
+      - skip-build-for-commit#pre-checkout:
+          files:
+            - hooks/*
+            - buildkite/*.sh
+
+  - label: ":sparkles: lint"
+    plugins:
+      - plugin-linter#v3.3.0:
+          id: skip-build-for-commit
+

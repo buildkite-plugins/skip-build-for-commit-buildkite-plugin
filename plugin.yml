@@ -1,5 +1,5 @@
 name: git commit skipper
-description: Exits the build if the commit is already built on other branches for a given pipeline
+description: Cancels the build if the commit is already built on other branches for a given pipeline
 author: "https://github.com/buildkite"
 requirements: []
 configuration:
