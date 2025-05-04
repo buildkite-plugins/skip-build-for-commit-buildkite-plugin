@@ -4,9 +4,10 @@ set -euo pipefail
 PLUGIN_PREFIX="SKIP_BUILD_FOR_COMMIT"
 
 
-# Reads either a value or a list from plugin config
-function plugin_read_list() {
-  prefix_read_list "BUILDKITE_PLUGIN_${PLUGIN_PREFIX}_${1}"
+# Reads a single value
+function plugin_read_config() {
+  local var="BUILDKITE_PLUGIN_${PLUGIN_PREFIX}_${1}"
+  local default="${2:-}"
+  echo "${!var:-$default}"
 }
-
 
