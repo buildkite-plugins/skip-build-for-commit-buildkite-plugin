@@ -1,40 +1,51 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "🔍 Checking  existing builds for commit $BUILDKITE_COMMIT..."
+echo "🔍 Checking existing builds for commit $BUILDKITE_COMMIT..."
 
 url="https://api.buildkite.com/v2/organizations/${BUILDKITE_ORGANIZATION_SLUG}/pipelines/${BUILDKITE_PIPELINE_SLUG}/builds?commit=${BUILDKITE_COMMIT}"
 
 token_var="${BUILDKITE_PLUGIN_SKIP_BUILD_FOR_COMMIT_READ_BUILD_TOKEN_ENV:-}"
 
-if [[ -z "${!token_var:-}" ]] ; then
-    echo "+++ 🚨 No read build api token found in \$${token_var} so commit will not be checked"
-else
-
-    response=$(curl -s -D - -H "Authorization: Bearer ${!token_var:-}" "$url")
-
-    if $response | grep -q " 404 Not Found"; then
-        echo "🚨 404 Not Found: The requested resource could not be found."
-        
-    else
-
-        body=$(echo "$response" | sed '1,/^\r$/d')
-
-        build_numbers=$(echo "$body" | grep -o '"number":[0-9]\+' | grep -o '[0-9]\+' | sed 's/^0*//')
-        duplicate_found=false
-        for number in $build_numbers; do
-            if [ "$number" != "$BUILDKITE_BUILD_NUMBER" ]; then
-                duplicate_found=true
-                echo "✅ Commit $BUILDKITE_COMMIT has already been built in build #$number. Skipping step..."
-                buildkite-agent annotate "Commit $BUILDKITE_COMMIT has already been built in build #$number. Cancelling the build..." --style "info"
-                curl -s -H "Authorization: Bearer ${!token_var:-}" \
-                        -X PUT "https://api.buildkite.com/v2/organizations/${BUILDKITE_ORGANIZATION_SLUG}/pipelines/${BUILDKITE_PIPELINE_SLUG}/builds/$BUILDKITE_BUILD_NUMBER/cancel"
-                exit 0
-            fi
-        done
-        if ! $duplicate_found; then
-            echo "✅ No duplicate build found for commit $BUILDKITE_COMMIT"
-        fi
-    fi
-
+if [[ -z "${!token_var:-}" ]]; then
+  echo "+++ 🚨 No read build API token found in \$${token_var} — skipping check."
+  exit 0
 fi
+
+# Reading header and body into temporary files
+headers=$(mktemp)
+body=$(mktemp)
+
+# Calling the API
+curl -sS -o "$body" -D "$headers" -H "Authorization: Bearer ${!token_var}" "$url"
+
+# Check HTTP status
+status=$(head -n 1 "$headers" | awk '{print $2}')
+if [[ "$status" == "404" ]]; then
+  echo "🚨 404 Not Found: The requested resource could not be found."
+  rm -f "$headers" "$body"
+  exit 0
+fi
+
+# Parse build numbers from body
+build_numbers=$(grep -o '"number":[0-9]\+' "$body" | grep -o '[0-9]\+' | sed 's/^0*//')
+duplicate_found=false
+
+for number in $build_numbers; do
+  if [ "$number" != "$BUILDKITE_BUILD_NUMBER" ]; then
+    duplicate_found=true
+    echo "✅ Commit $BUILDKITE_COMMIT has already been built in build #$number. Skipping step..."
+    buildkite-agent annotate "Commit $BUILDKITE_COMMIT has already been built in build #$number. Cancelling the build..." --style "info"
+    curl -s -H "Authorization: Bearer ${!token_var}" \
+      -X PUT "https://api.buildkite.com/v2/organizations/${BUILDKITE_ORGANIZATION_SLUG}/pipelines/${BUILDKITE_PIPELINE_SLUG}/builds/$BUILDKITE_BUILD_NUMBER/cancel"
+    rm -f "$headers" "$body"
+    exit 0
+  fi
+done
+
+if [ "$duplicate_found" = false ]; then
+  echo "✅ No duplicate build found for commit $BUILDKITE_COMMIT"
+fi
+
+# Cleanup
+rm -f "$headers" "$body"
