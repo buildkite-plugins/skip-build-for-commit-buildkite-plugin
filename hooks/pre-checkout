@@ -6,7 +6,7 @@ echo "🔍 Checking existing builds for commit $BUILDKITE_COMMIT..."
 url="https://api.buildkite.com/v2/organizations/${BUILDKITE_ORGANIZATION_SLUG}/pipelines/${BUILDKITE_PIPELINE_SLUG}/builds?commit=${BUILDKITE_COMMIT}"
 
 if [[ -z "${BUILDKITE_PLUGIN_SKIP_BUILD_FOR_COMMIT_READ_BUILD_TOKEN_ENV:-}" ]]; then
-  echo "❌ Missing mandatory option: commit-message-substring"
+  echo "❌ Missing mandatory option: API TOKEN to read builds"
   exit 1
 fi
 
