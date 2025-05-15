@@ -19,7 +19,7 @@ steps:
 
 ### `API_TOKEN_ENV_VAR_NAME` (string)
 
-Environment variable for Buildkite API token access to read builds. Choose only read_builds as token scope.To avoid leaking your API token to Buildkite.com or anyone with access to build logs, you need to avoid including it in pipeline.yml. This means it needs to be set specifically with an environment variable in an Agent hook, or made available from a previous plugin defined on the same step.
+Environment variable for Buildkite API token access to read & cancel builds. Choose only read_builds and write_builds as token scope.To avoid leaking your API token to Buildkite.com or anyone with access to build logs, you need to avoid including it in pipeline.yml. This means it needs to be set specifically with an environment variable in an Agent hook, or made available from a previous plugin defined on the same step.
 
 
 
