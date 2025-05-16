@@ -4,8 +4,8 @@ author: "https://github.com/buildkite"
 requirements: []
 configuration:
   properties:
-    read_build_token_env:
+    build_token_env:
       type: string
-      description: "Name of the buildkite api token set in your environment to read the build"
+      description: "Name of the buildkite api token set in your environment to read and cancel the build"
   additionalProperties: false
 

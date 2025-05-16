@@ -10,14 +10,14 @@ Plugin to verify builds for current commit of a build and cancel the current bui
 steps:
   - plugins:
       - skip-build-for-commit#v1.0.0:
-          read_build_token_env: API_TOKEN_ENV_VAR_NAME
+          build_token_env: API_TOKEN_ENV_VAR_NAME
 ```
 
 ## Configuration
 
 ### Required
 
-### `API_TOKEN_ENV_VAR_NAME` (string)
+#### `build_token_env` (string)
 
 Environment variable for Buildkite API token access to read & cancel builds. Choose only read_builds and write_builds as token scope.To avoid leaking your API token to Buildkite.com or anyone with access to build logs, you need to avoid including it in pipeline.yml. This means it needs to be set specifically with an environment variable in an Agent hook, or made available from a previous plugin defined on the same step.
 

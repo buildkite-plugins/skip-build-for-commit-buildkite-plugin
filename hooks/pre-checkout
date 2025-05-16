@@ -5,19 +5,18 @@ echo "🔍 Checking existing builds for commit $BUILDKITE_COMMIT..."
 
 url="https://api.buildkite.com/v2/organizations/${BUILDKITE_ORGANIZATION_SLUG}/pipelines/${BUILDKITE_PIPELINE_SLUG}/builds?commit=${BUILDKITE_COMMIT}"
 
-if [[ -z "${BUILDKITE_PLUGIN_SKIP_BUILD_FOR_COMMIT_READ_BUILD_TOKEN_ENV:-}" ]]; then
-  echo "❌ Missing mandatory option: API TOKEN to read builds"
+if [[ -z "${BUILDKITE_PLUGIN_SKIP_BUILD_FOR_COMMIT_BUILD_TOKEN_ENV:-}" ]]; then
+  echo "❌ Missing mandatory option: API TOKEN to read & cancel builds"
   exit 1
 fi
 
-token_var="${BUILDKITE_PLUGIN_SKIP_BUILD_FOR_COMMIT_READ_BUILD_TOKEN_ENV:-}"
 
 # Reading header and body into temporary files
 headers=$(mktemp)
 body=$(mktemp)
 
 # Calling the API
-curl -sS -o "$body" -D "$headers" -H "Authorization: Bearer ${!token_var}" "$url"
+curl -sS -o "$body" -D "$headers" -H "Authorization: Bearer ${!BUILDKITE_PLUGIN_SKIP_BUILD_FOR_COMMIT_BUILD_TOKEN_ENV}" "$url"
 
 # Checking HTTP status
 status=$(head -n 1 "$headers" | awk '{print $2}')
@@ -35,7 +34,7 @@ for number in $build_numbers; do
     duplicate_found=true
     echo "✅ Commit $BUILDKITE_COMMIT has already been built in build #$number. Skipping step..."
     buildkite-agent annotate "Commit $BUILDKITE_COMMIT has already been built in build #$number. Cancelling the build..." --style "info"
-    curl -s -H "Authorization: Bearer ${!token_var}" \
+    curl -s -H "Authorization: Bearer ${!BUILDKITE_PLUGIN_SKIP_BUILD_FOR_COMMIT_BUILD_TOKEN_ENV}" \
       -X PUT "https://api.buildkite.com/v2/organizations/${BUILDKITE_ORGANIZATION_SLUG}/pipelines/${BUILDKITE_PIPELINE_SLUG}/builds/$BUILDKITE_BUILD_NUMBER/cancel"
     rm -f "$headers" "$body"
     exit 0
